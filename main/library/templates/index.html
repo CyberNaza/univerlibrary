@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Books List</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+</head>
+<body>
+    <h1>Books List</h1>
+    <div id="book-previews"></div>
+
+    <script>
+        // Function to render the first page of the PDF preview
+        function renderPdfPreview(pdfUrl, canvasId) {
+            // Load the PDF from the URL
+            const loadingTask = pdfjsLib.getDocument(pdfUrl);
+
+            loadingTask.promise.then(function(pdf) {
+                // Get the first page
+                pdf.getPage(1).then(function(page) {
+                    // Prepare canvas
+                    const canvas = document.getElementById(canvasId);
+                    const context = canvas.getContext('2d');
+                    const viewport = page.getViewport({ scale: 0.5 }); // Adjust scale for preview
+
+                    // Set canvas size to match PDF page size
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    // Render PDF page to canvas
+                    page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise.then(() => {
+                        console.log('First page rendered!');
+                    }).catch(function(renderError) {
+                        console.error('Error rendering the page:', renderError);
+                    });
+                }).catch(function(pageError) {
+                    console.error('Error loading PDF page:', pageError);
+                });
+            }).catch(function(error) {
+                console.error('Error loading PDF:', error);
+            });
+        }
+
+        // Fetch all books from the backend
+        fetch('http://127.0.0.1:8000/books/')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('book-previews');
+                if (!data.length) {
+                    container.innerHTML = '<p>No books found.</p>';
+                    return;
+                }
+
+                data.forEach((book, index) => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <h3>${book.name}</h3>
+                        <a href="${book.pdf}" target="_blank">Open PDF</a><br/>
+                        <canvas id="pdf-preview-${index}"></canvas>
+                        <hr/>
+                    `;
+                    container.appendChild(div);
+
+                    // Render the first page of the book's PDF
+                    renderPdfPreview(book.pdf, `pdf-preview-${index}`);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching books:', error);
+            });
+    </script>
+</body>
+</html>
