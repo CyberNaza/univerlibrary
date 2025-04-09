@@ -6,17 +6,22 @@ from rest_framework import status
 from django.core.files.storage import default_storage
 import os
 from django.shortcuts import render
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Book
+from .serializers import BookSerializer
+
 @api_view(['GET'])
-def get_all_books(request):
-    search_query = request.GET.get('search', '')  # get ?search= value
+def get_books(request):
+    # Get all books from the database
     books = Book.objects.all()
     
-    if search_query:
-        books = books.filter(name__icontains=search_query)  # case-insensitive search
-
+    # Serialize the book data to send it to the client
     serializer = BookSerializer(books, many=True)
-    return Response(serializer.data)
-
+    
+    # Return the book data as JSON
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def add_books(request):

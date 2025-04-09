@@ -2,35 +2,131 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Books List</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
 </head>
 <body>
     <h1>Books List</h1>
     <div id="book-previews"></div>
 
     <script>
-        fetch('http://127.0.0.1:8000/books/')
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('book-previews');
-                if (!data.length) {
-                    container.innerHTML = '<p>No books found.</p>';
-                    return;
-                }
+        // Function to render the first page of the PDF
+        function renderPdfPreview(pdfUrl, canvasId) {
+            const loadingTask = pdfjsLib.getDocument(pdfUrl);
+            
+            loadingTask.promise.then(function(pdf) {
+                pdf.getPage(1).then(function(page) {
+                    const canvas = document.getElementById(canvasId);
+                    const context = canvas.getContext('2d');
+                    const viewport = page.getViewport({ scale: 0.5 }); // Adjust scale as needed
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
 
-                data.forEach(book => {
-                    const div = document.createElement('div');
-                    div.innerHTML = `
-                        <h3>${book.name}</h3>
-                        <a href="${book.pdf}" target="_blank">Open PDF</a>
-                        <hr/>
-                    `;
-                    container.appendChild(div);
+                    page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise.then(() => {
+                        console.log('First page rendered!');
+                    }).catch(function(renderError) {
+                        console.error('Error rendering the page:', renderError);
+                    });
+                }).catch(function(pageError) {
+                    console.error('Error loading PDF page:', pageError);
                 });
-            })
-            .catch(error => {
-                console.error('Error fetching books:', error);
+            }).catch(function(error) {
+                console.error('Error loading PDF:', error);
             });
+        }
+
+        // Function to send a GET request to the books API and handle the response
+        function fetchBooks() {
+            fetch('http://127.0.0.1:8000/books/')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const bookPreviewsDiv = document.getElementById('book-previews');
+                    if (data.length === 0) {
+                        bookPreviewsDiv.innerHTML = '<p>No books available.</p>';
+                    } else {
+                        data.forEach(book => {
+                            const bookDiv = document.createElement('div');
+                            // Correct URL for the PDF
+                            const pdfUrl = `http://127.0.0.1:8000${book.pdf}`;
+
+                            bookDiv.innerHTML = `
+                                <h3>${book.name}</h3>
+                                <a href="${pdfUrl}" target="_blank" download>Download PDF</a><br>
+                                <canvas id="pdf-preview-${book.id}"></canvas>
+                                <hr/>
+                            `;
+                            bookPreviewsDiv.appendChild(bookDiv);
+
+                            // Render the first page of the book's PDF
+                            renderPdfPreview(pdfUrl, `pdf-preview-${book.id}`);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching books:', error);
+                    document.getElementById('book-previews').innerHTML = '<p>Error fetching book data.</p>';
+                });
+        }
+
+        // Call the function when the page loads
+        window.onload = fetchBooks;
     </script>
 </body>
 </html>
+asgiref==3.8.1
+attrs==25.1.0
+blinker==1.9.0
+certifi==2025.1.31
+charset-normalizer==3.4.1
+click==8.1.8
+cmake==3.31.4
+crispy-bootstrap5==2024.10
+cuser==0.0.4
+Django==5.1.6
+django-cors-headers==4.7.0
+django-crispy-forms==2.3
+django-environ==0.11.2
+django-filter==25.1
+django-tinymce==4.1.0
+djangorestframework==3.15.2
+djangorestframework_simplejwt==5.5.0
+dotenv==0.9.9
+drf-spectacular==0.28.0
+drf-yasg==1.21.9
+Flask==3.1.0
+idna==3.10
+inflection==0.5.1
+itsdangerous==2.2.0
+Jinja2==3.1.5
+jsonschema==4.23.0
+jsonschema-specifications==2024.10.1
+Markdown==3.7
+MarkupSafe==3.0.2
+modeltranslation==0.25
+packaging==24.2
+pillow==11.0.0
+psycopg2-binary==2.9.10
+PyJWT==2.9.0
+pyserial==3.5
+python-decouple==3.8
+python-dotenv==1.0.1
+pytz==2025.1
+PyYAML==6.0.2
+referencing==0.36.2
+requests==2.32.3
+rpds-py==0.23.1
+sqlparse==0.5.3
+typing_extensions==4.12.2
+tzdata==2025.1
+uritemplate==4.1.1
+urllib3==2.3.0
+Werkzeug==3.1.3
