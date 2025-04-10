@@ -1,84 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Books List</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book List</title>
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+  </style>
 </head>
 <body>
-    <h1>Books List</h1>
-    <div id="book-previews"></div>
 
-    <script>
-        // Function to render the first page of the PDF
-        function renderPdfPreview(pdfUrl, canvasId) {
-            const loadingTask = pdfjsLib.getDocument(pdfUrl);
-            
-            loadingTask.promise.then(function(pdf) {
-                pdf.getPage(1).then(function(page) {
-                    const canvas = document.getElementById(canvasId);
-                    const context = canvas.getContext('2d');
-                    const viewport = page.getViewport({ scale: 0.5 }); // Adjust scale as needed
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
+  <h2>Book List</h2>
+  <table id="bookTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>PDF Link</th>
+        <th>First Page Image</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Book data will be inserted here -->
+    </tbody>
+  </table>
 
-                    page.render({
-                        canvasContext: context,
-                        viewport: viewport
-                    }).promise.then(() => {
-                        console.log('First page rendered!');
-                    }).catch(function(renderError) {
-                        console.error('Error rendering the page:', renderError);
-                    });
-                }).catch(function(pageError) {
-                    console.error('Error loading PDF page:', pageError);
-                });
-            }).catch(function(error) {
-                console.error('Error loading PDF:', error);
-            });
+  <script>
+    // Function to fetch JSON data and populate the table
+    async function fetchBookData() {
+      try {
+        const response = await fetch('https://5654-188-113-249-177.ngrok-free.app/books/');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
+        const data = await response.json();
+        const tableBody = document.getElementById('bookTable').getElementsByTagName('tbody')[0];
+        data.forEach(book => {
+          const row = tableBody.insertRow();
+          row.innerHTML = `
+            <td>${book.id}</td>
+            <td>${book.name}</td>
+            <td><a href="${book.pdf}" target="_blank">Download PDF</a></td>
+            <td><img src="${book.first_page_image}" alt="First Page" width="100"></td>
+          `;
+        });
+      } catch (error) {
+        console.error('Fetch error:', error);
+      }
+    }
 
-        // Function to send a GET request to the books API and handle the response
-        function fetchBooks() {
-            fetch('http://127.0.0.1:8000/books/')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    const bookPreviewsDiv = document.getElementById('book-previews');
-                    if (data.length === 0) {
-                        bookPreviewsDiv.innerHTML = '<p>No books available.</p>';
-                    } else {
-                        data.forEach(book => {
-                            const bookDiv = document.createElement('div');
-                            // Correct URL for the PDF
-                            const pdfUrl = `http://127.0.0.1:8000${book.pdf}`;
+    // Call the function to fetch and display book data
+    fetchBookData();
+  </script>
 
-                            bookDiv.innerHTML = `
-                                <h3>${book.name}</h3>
-                                <a href="${pdfUrl}" target="_blank" download>Download PDF</a><br>
-                                <canvas id="pdf-preview-${book.id}"></canvas>
-                                <hr/>
-                            `;
-                            bookPreviewsDiv.appendChild(bookDiv);
-
-                            // Render the first page of the book's PDF
-                            renderPdfPreview(pdfUrl, `pdf-preview-${book.id}`);
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching books:', error);
-                    document.getElementById('book-previews').innerHTML = '<p>Error fetching book data.</p>';
-                });
-        }
-
-        // Call the function when the page loads
-        window.onload = fetchBooks;
-    </script>
 </body>
 </html>
