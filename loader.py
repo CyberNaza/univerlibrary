@@ -4,7 +4,7 @@ import string
 import requests
 
 # Configuration
-API_URL = 'http://localhost:8000/books/'  # Replace with your server's URL
+API_URL = 'http://64.226.107.171/books/'  # Replace with your server's URL
 PDF_FOLDER = '/home/rak/books/assambler'  # Folder containing the PDFs you want to send
 NUM_BOOKS = 1000  # Number of books to send
 
